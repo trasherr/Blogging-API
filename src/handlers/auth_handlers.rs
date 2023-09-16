@@ -3,14 +3,22 @@ use chrono::Utc;
 use sea_orm::{DatabaseConnection, Set, ActiveModelTrait, EntityTrait, Condition, ColumnTrait, QueryFilter};
 use uuid::Uuid;
 
-use crate::models::user_models::{CreateUserModel, LoginUserModel, UserModel};
+use crate::{models::user_models::{CreateUserModel, LoginUserModel, UserModel}, utils::api_error::APIError};
 
 
 pub async fn create_user_post(
     Extension(db): Extension<DatabaseConnection>,
     Json(user_data): Json<CreateUserModel>
-) -> impl IntoResponse {
-    // let db: DatabaseConnection = Database::connect("postgres://trasherr:trasherr@localhost:5432/BlogDB").await.unwrap();
+) -> Result<(),APIError> {
+
+    let user = entity::user::Entity::find()
+    .filter(entity::user::Column::Email.eq(user_data.email.clone()))
+    .one(&db).await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?;
+
+    if user != None {
+        return  Err(APIError { message: "User exists".to_owned(), status_code:StatusCode::CONFLICT, error_code: Some(40) });
+    }
 
     let user_model = entity::user::ActiveModel{
       name: Set(user_data.name.to_owned()),
@@ -20,18 +28,17 @@ pub async fn create_user_post(
       created_at: Set(Utc::now().naive_utc()) ,
         ..Default::default()
     };
-    user_model.insert(&db).await.unwrap();
+    user_model.insert(&db).await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?;
 
-    // db.close().await.unwrap();
-    (StatusCode::ACCEPTED,"Inserted")
+   Ok(())
 
 }
 
 pub async fn login_user_post(
     Extension(db): Extension<DatabaseConnection>,
     Json(user_data): Json<LoginUserModel>
-) -> impl IntoResponse {
-    // let db: DatabaseConnection = Database::connect("postgres://trasherr:trasherr@localhost:5432/BlogDB").await.unwrap();
+) -> Result<Json<UserModel>,APIError> {
 
     let user = entity::user::Entity::find()
     .filter(
@@ -39,7 +46,9 @@ pub async fn login_user_post(
             .add(entity::user::Column::Email.eq(user_data.email))
             .add(entity::user::Column::Password.eq(user_data.password))
     ).one(&db)
-    .await.unwrap().unwrap();
+    .await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?
+    .ok_or(APIError { message: "Not Found".to_owned(), status_code: StatusCode::NOT_FOUND, error_code: Some(44) })?;
 
     let data = UserModel{
         name: user.name,
@@ -48,7 +57,6 @@ pub async fn login_user_post(
         created_at: user.created_at,
     };
 
-    // db.close().await.unwrap();
-    (StatusCode::ACCEPTED,Json(data))
+    Ok(Json(data))
 
 }

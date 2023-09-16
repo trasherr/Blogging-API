@@ -2,59 +2,65 @@ use axum::{Json, response::IntoResponse, http::StatusCode, extract::Path, Extens
 use sea_orm::{DatabaseConnection, Set, ActiveModelTrait, EntityTrait, ColumnTrait, QueryFilter};
 use uuid::Uuid;
 
-use crate::models::user_models::{UpdateUserModel, UserModel};
+use crate::{models::user_models::{UpdateUserModel, UserModel}, utils::api_error::APIError};
 
 
 pub async fn update_user_put(
     Extension(db): Extension<DatabaseConnection>,
     Path(uuid): Path<Uuid>,
     Json(user_data): Json<UpdateUserModel>
-) -> impl IntoResponse {
+) -> Result<(),APIError> {
 
-    // let db: DatabaseConnection = Database::connect("postgres://trasherr:trasherr@localhost:5432/BlogDB").await.unwrap();
     
     let mut user: entity::user::ActiveModel = entity::user::Entity::find()
     .filter(entity::user::Column::Uuid.eq(uuid))
     .one(&db)
-    .await.unwrap().unwrap().into();
+    .await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?
+    .ok_or(APIError { message: "Not Found".to_owned(), status_code: StatusCode::NOT_FOUND, error_code: Some(44) })?
+    .into();
 
     user.name = Set(user_data.name);
 
-    user.update(&db).await.unwrap();
-    // db.close().await.unwrap();
+    user.update(&db).await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?;
 
-    (StatusCode::ACCEPTED,"Updated")
+    Ok(())
 
 }
 
 pub async fn delete_user_delete(
     Extension(db): Extension<DatabaseConnection>,
     Path(uuid): Path<Uuid>
-)-> impl IntoResponse {
-    // let db: DatabaseConnection = Database::connect("postgres://trasherr:trasherr@localhost:5432/BlogDB").await.unwrap();
+)-> Result<(),APIError> {
 
-    let user = entity::user::Entity::find().filter(entity::user::Column::Uuid.eq(uuid)).one(&db).await.unwrap().unwrap();
+    let user = entity::user::Entity::find()
+    .filter(entity::user::Column::Uuid.eq(uuid))
+    .one(&db).await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?
+    .ok_or(APIError { message: "Not Found".to_owned(), status_code: StatusCode::NOT_FOUND, error_code: Some(44) })?;
 
-    entity::user::Entity::delete_by_id(user.id).exec(&db).await.unwrap();
+    entity::user::Entity::delete_by_id(user.id)
+    .exec(&db)
+    .await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?;
 
-    // db.close().await.unwrap();
-
-    (StatusCode::ACCEPTED,"deleted")
+    Ok(())
 }
 
 pub async fn all_user_get(
     Extension(db): Extension<DatabaseConnection>
-)-> impl IntoResponse{
-    // let db: DatabaseConnection = Database::connect("postgres://trasherr:trasherr@localhost:5432/BlogDB").await.unwrap();
+)-> Result<Json<Vec<UserModel>>,APIError>{
 
-    let users: Vec<UserModel> = entity::user::Entity::find().all(&db).await.unwrap().into_iter().map(|item| UserModel{
+    let users: Vec<UserModel> = entity::user::Entity::find().all(&db).await
+    .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?
+    .into_iter().map(|item| UserModel{
         name: item.name,
         email: item.email,
         uuid: item.uuid,
         created_at: item.created_at,
     }).collect();
 
-    // db.close().await.unwrap();
-    (StatusCode::ACCEPTED,Json(users))
+    Ok(Json(users))
 
 }
