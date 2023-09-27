@@ -24,6 +24,11 @@ pub struct LoginUserModel{
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct LoginUserResponseModel{
+    pub token: String
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct UpdateUserModel{
     pub name: String
 }

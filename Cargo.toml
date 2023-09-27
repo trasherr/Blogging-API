@@ -16,7 +16,8 @@ tokio = { version = "1.31.0", features = ["full"] }
 sea-orm = { version = "0.12", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ] }
 uuid = { version = "1.4.1", features = ["v4"] }
 chrono = "0.4.26"
-serde = "1.0.188"
+jsonwebtoken = "8"
+serde = {version = "1.0.188", features = ["derive"] }
 tower-http = { version = "0.4.4", features = ["cors"] }
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
