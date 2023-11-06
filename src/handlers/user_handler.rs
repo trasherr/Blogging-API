@@ -54,6 +54,7 @@ pub async fn all_user_get(
 
     let users: Vec<UserModel> = entity::user::Entity::find().all(&db).await
     .map_err(|err| APIError { message: err.to_string(), status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code: Some(50)})?
+    
     .into_iter().map(|item| UserModel{
         name: item.name,
         email: item.email,

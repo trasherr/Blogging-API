@@ -10,6 +10,12 @@ pub struct UserModel{
     pub created_at: NaiveDateTime
 }
 
+#[derive(Serialize,Deserialize,Clone)]
+pub struct UserMicroModel{
+    pub name: String,
+    pub uuid: Uuid,
+}
+
 #[derive(Serialize,Deserialize)]
 pub struct CreateUserModel{
     pub name: String,

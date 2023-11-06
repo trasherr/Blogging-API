@@ -22,6 +22,7 @@ async fn server(){
     .merge(routes::user_routes::user_routes())
     .route_layer(middleware::from_fn(utils::guards::guard))
     .merge(routes::auth_routes::auth_routes())
+    .merge(routes::home_routes::home_routes())
     .layer(Extension(db));
 
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
