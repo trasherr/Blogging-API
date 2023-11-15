@@ -14,6 +14,7 @@ pub fn user_routes() -> Router {
     .route("/api/user/:uuid/delete",delete(user_handler::delete_user_delete))
     .route("/api/user/all",get(user_handler::all_user_get))
     .route("/api/user/post",post(post_handler::create_post_post))
+    .route("/api/user/post/:uuid/image",post(post_handler::upload_image_post))
     .layer(cors);
     router
 }

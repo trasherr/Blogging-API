@@ -1,5 +1,6 @@
 use axum::{Router, Extension, middleware} ;
 use sea_orm::Database;
+use tower_http::services::ServeDir;
 
 
 mod models;
@@ -23,7 +24,8 @@ async fn server(){
     .route_layer(middleware::from_fn(utils::guards::guard))
     .merge(routes::auth_routes::auth_routes())
     .merge(routes::home_routes::home_routes())
-    .layer(Extension(db));
+    .layer(Extension(db))
+    .nest_service("/", ServeDir::new("public"));
 
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
     .serve(app.into_make_service())
