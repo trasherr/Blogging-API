@@ -10,8 +10,7 @@ pub fn home_routes() -> Router {
     .allow_origin(Any);
 
     let router = Router::new()
-    .route("/api/post/:uuid",get(post_handler::get_post_get))
-   
+    .route("/api/post/:uuid",get(post_handler::get_post_get))   
     .layer(cors);
     router
 }
